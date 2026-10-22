@@ -176,7 +176,8 @@
     } catch (err) {
       console.error(err);
       showView(state.psd ? 'dash' : 'upload');
-      toast('解析に失敗しました：' + (err && err.message ? err.message : err), 'error');
+      toast('解析に失敗しました：' + (err && err.message ? err.message : err)
+        + (isClip ? '' : '（Photoshopで「互換性を優先」をオンにして保存し直すと読めることがあります）'), 'error');
       return;
     }
     state.psd = psd;

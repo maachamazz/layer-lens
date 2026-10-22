@@ -38,7 +38,8 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   e.respondWith(
-    fetch(req)
+    // no-cache: ブラウザの HTTP キャッシュ（最大10分）を使わず、毎回サーバーに更新を確認する
+    fetch(req, { cache: 'no-cache' })
       .then(res => {
         if (res.ok) {
           const copy = res.clone();

@@ -42,30 +42,12 @@
 
   <!-- アップロード画面 -->
   <main id="upload-view" class="upload-view">
-    <section class="hero">
-      <p class="eyebrow">For Live2D Cubism</p>
-      <h1>モデリング前のPSDを、<br><span class="grad">ひと目で検品。</span></h1>
-      <p class="lead">マスク・クリッピング・命名・同名・はみ出しなど、Cubismに読み込む前に直したいポイントを自動でチェックします。CLIP STUDIOの .clip もそのまま読み込んでPSDに変換できます。</p>
-    </section>
-
-    <label id="dropzone" class="dropzone" tabindex="0">
+    <label id="dropzone" class="dropzone" tabindex="0" aria-label="PSD または CLIP ファイルを選択">
       <input id="file-input" type="file" accept=".psd,.clip" hidden>
-      <span class="drop-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M12 16V4"/><path d="m6 10 6-6 6 6"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
-      </span>
-      <span class="drop-title">PSD / CLIPをドロップ、またはクリックして選択</span>
-      <span class="drop-sub">.psd ・ .clip に対応 ・ ファイルは外部に送信されません</span>
+      <span class="drop-art" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="drop-title">PSD / CLIP をドロップ</span>
+      <span class="drop-sub">またはクリックして選択</span>
     </label>
-
-    <ul class="feature-list">
-      <li><span class="chip c-mask">MASK</span>マスクの検出と<b>適用 / 削除</b></li>
-      <li><span class="chip c-clip">CLIP</span>クリッピングの可視化</li>
-      <li><span class="chip c-dup">DUP</span>同名レイヤーの検出</li>
-      <li><span class="chip c-out">OUT</span>キャンバス外・空白・命名チェック</li>
-      <li><span class="chip c-clip">CSP</span>.clip → PSD変換と<b>非互換レイヤー</b>の検出</li>
-    </ul>
-
-    <p class="note">解析に失敗する場合は、Photoshopで一度開いて「最大互換」をオンにして上書き保存してから再度お試しください。</p>
   </main>
 
   <!-- 読み込み中 -->
@@ -222,8 +204,8 @@
   </main>
 
   <footer class="site-footer">
-    <span>ファイルはブラウザ内だけで処理され、外部に送信されません</span>
-    <span>.clip の読み込みは非公式の解析によるものです</span>
+    <span>ファイルは外部に送信されません</span>
+    <a href="https://github.com/maachamazz/layer-lens#readme" target="_blank" rel="noopener">使い方・注意</a>
     <a href="THIRD_PARTY_LICENSES.md" target="_blank" rel="noopener">ライセンス</a>
   </footer>
 
