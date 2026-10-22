@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Layer Lens — Live2D PSDチェッカー</title>
+  <meta name="description" content="Live2D用PSD/CLIPの検品ツール。マスク・クリッピング・命名・同名レイヤーなどをブラウザ内だけでチェックします。ファイルは外部に送信されません。">
+  <meta name="theme-color" content="#7158ff">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css">
+  <script>
+    // テーマのちらつき防止
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('ll-theme'); } catch (e) {}
+      if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5" opacity=".65"/><path d="m3 17.5 9 5 9-5" opacity=".35"/></svg>
+      </span>
+      <span class="brand-name">Layer Lens</span>
+      <span class="brand-sub">Live2D PSD Checker</span>
+    </div>
+    <div class="topbar-actions">
+      <button id="settings-btn" class="icon-btn" title="チェック設定" aria-label="チェック設定">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+      </button>
+      <button id="theme-btn" class="icon-btn" title="テーマ切替" aria-label="テーマ切替">
+        <svg class="i-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- アップロード画面 -->
+  <main id="upload-view" class="upload-view">
+    <section class="hero">
+      <p class="eyebrow">For Live2D Cubism</p>
+      <h1>モデリング前のPSDを、<br><span class="grad">ひと目で検品。</span></h1>
+      <p class="lead">マスク・クリッピング・命名・同名・はみ出しなど、Cubismに読み込む前に直したいポイントを自動でチェックします。CLIP STUDIOの .clip もそのまま読み込んでPSDに変換できます。</p>
+    </section>
+
+    <label id="dropzone" class="dropzone" tabindex="0">
+      <input id="file-input" type="file" accept=".psd,.clip" hidden>
+      <span class="drop-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 16V4"/><path d="m6 10 6-6 6 6"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+      </span>
+      <span class="drop-title">PSD / CLIPをドロップ、またはクリックして選択</span>
+      <span class="drop-sub">.psd ・ .clip に対応 ・ ファイルは外部に送信されません</span>
+    </label>
+
+    <ul class="feature-list">
+      <li><span class="chip c-mask">MASK</span>マスクの検出と<b>適用 / 削除</b></li>
+      <li><span class="chip c-clip">CLIP</span>クリッピングの可視化</li>
+      <li><span class="chip c-dup">DUP</span>同名レイヤーの検出</li>
+      <li><span class="chip c-out">OUT</span>キャンバス外・空白・命名チェック</li>
+      <li><span class="chip c-clip">CSP</span>.clip → PSD変換と<b>非互換レイヤー</b>の検出</li>
+    </ul>
+
+    <p class="note">解析に失敗する場合は、Photoshopで一度開いて「最大互換」をオンにして上書き保存してから再度お試しください。</p>
+  </main>
+
+  <!-- 読み込み中 -->
+  <div id="loading-view" class="loading-view hidden" role="status">
+    <div class="spinner"></div>
+    <p id="loading-text">解析中…</p>
+  </div>
+
+  <!-- ダッシュボード -->
+  <main id="dash-view" class="dash hidden">
+    <section class="file-bar">
+      <div class="file-info">
+        <h2 id="file-name" class="file-name">file.psd</h2>
+        <div id="file-tags" class="file-tags"></div>
+      </div>
+      <div class="file-actions">
+        <button id="report-btn" class="btn">
+          <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          レポートをコピー
+        </button>
+        <button id="reset-btn" class="btn">
+          <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+          別のファイル
+        </button>
+        <button id="export-btn" class="btn btn-primary" disabled>
+          <svg viewBox="0 0 24 24"><path d="M12 4v12"/><path d="m6 10 6 6 6-6"/><path d="M4 20h16"/></svg>
+          <span id="export-label">修正版PSDを保存</span> <span id="pending-count" class="count-pill">0</span>
+        </button>
+      </div>
+    </section>
+
+    <div class="grid">
+      <!-- 左: サマリー & 診断 -->
+      <aside class="col col-left">
+        <section class="card stats">
+          <div class="stat"><span class="stat-num" id="st-layers">0</span><span class="stat-label">レイヤー</span></div>
+          <div class="stat"><span class="stat-num" id="st-groups">0</span><span class="stat-label">フォルダ</span></div>
+          <div class="stat"><span class="stat-num" id="st-total">0</span><span class="stat-label">合計</span></div>
+        </section>
+
+        <section class="card score-card">
+          <div class="score-ring" id="score-ring">
+            <svg viewBox="0 0 36 36"><circle class="ring-bg" cx="18" cy="18" r="15.5"/><circle class="ring-fg" id="ring-fg" cx="18" cy="18" r="15.5" pathLength="100"/></svg>
+            <span id="score-num">—</span>
+          </div>
+          <div class="score-text">
+            <p id="score-title" class="score-title">—</p>
+            <p id="score-sub" class="score-sub"></p>
+          </div>
+        </section>
+
+        <section class="card">
+          <h3 class="card-title">データ診断 <span class="hint">クリックで絞り込み</span></h3>
+          <div id="checks" class="checks"></div>
+        </section>
+      </aside>
+
+      <!-- 中央: ツリー -->
+      <section class="col col-center card">
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-tab="tree" role="tab">レイヤー階層</button>
+          <button class="tab" data-tab="diff" role="tab">差分情報</button>
+        </div>
+
+        <div id="tab-tree" class="tab-panel">
+          <div class="tree-toolbar">
+            <div class="search">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              <input id="search" type="search" placeholder="レイヤー名で検索（/ キー）">
+            </div>
+            <button id="toggle-all-btn" class="btn btn-sm">全て閉じる</button>
+            <button id="thumb-btn" class="btn btn-sm" aria-pressed="true">サムネ</button>
+            <button id="copy-tree-btn" class="btn btn-sm">構造コピー</button>
+          </div>
+          <div id="filter-bar" class="filter-bar hidden">
+            <span id="filter-label"></span>
+            <div id="filter-actions" class="filter-actions"></div>
+            <button id="filter-clear" class="btn btn-sm btn-ghost">解除 ✕</button>
+          </div>
+          <div class="legend">
+            <span><i class="lg lg-clip"></i>クリッピング</span>
+            <span><i class="lg lg-base"></i>クリップ元</span>
+            <span><i class="lg lg-mask"></i>マスク</span>
+            <span><i class="lg lg-pend"></i>変更予定</span>
+          </div>
+          <div id="tree" class="tree" role="tree"></div>
+        </div>
+
+        <div id="tab-diff" class="tab-panel hidden">
+          <div class="tree-toolbar">
+            <p class="muted small">ルート直下のフォルダごとに、直下レイヤー数（差分の種類）を表示します。</p>
+            <button id="copy-diff-btn" class="btn btn-sm">差分コピー</button>
+          </div>
+          <div id="diff-list" class="diff-list"></div>
+        </div>
+      </section>
+
+      <!-- 右: プレビュー & 詳細 -->
+      <aside class="col col-right">
+        <section class="card preview-card">
+          <div class="preview-head">
+            <h3 class="card-title">プレビュー</h3>
+            <div class="seg" role="group">
+              <button class="seg-btn active" data-pv="all">全体</button>
+              <button class="seg-btn" data-pv="solo">選択のみ</button>
+            </div>
+          </div>
+          <div class="preview-wrap checker">
+            <canvas id="preview"></canvas>
+            <canvas id="preview-overlay"></canvas>
+          </div>
+          <p id="preview-note" class="muted small"></p>
+        </section>
+
+        <section class="card namer">
+          <div class="namer-head">
+            <h3 class="card-title">命名ツール</h3>
+            <span id="nm-count" class="hint">未選択</span>
+          </div>
+          <p class="muted small namer-help">Ctrl・Shift+クリックで複数選択 ／ 名前をダブルクリックで変更 ／ Ctrl+Z で元に戻す</p>
+          <button id="nm-auto" class="btn btn-primary btn-block" title="選択フォルダー直下の未命名レイヤーに「フォルダー名 1, 2…」を付けます">選択フォルダー内を連番命名</button>
+          <label class="check small"><input id="nm-auto-deep" type="checkbox"> <span>中のフォルダーにもそれぞれ適用</span></label>
+          <div class="stamp-grid">
+            <button class="btn btn-sm" data-stamp="R" title="末尾に「 R」（L なら置き換え）">＋ R</button>
+            <button class="btn btn-sm" data-stamp="L" title="末尾に「 L」（R なら置き換え）">＋ L</button>
+            <button class="btn btn-sm" data-stamp="線画" title="末尾に「 線画」（塗り なら置き換え）">＋ 線画</button>
+            <button class="btn btn-sm" data-stamp="塗り" title="末尾に「 塗り」（線画 なら置き換え）">＋ 塗り</button>
+          </div>
+          <div id="nm-custom" class="stamp-grid"></div>
+          <div class="stamp-grid">
+            <button id="nm-space" class="btn btn-sm" title="連続した半角スペースを1つに＋前後の空白を削除（未選択なら全レイヤー）">スペース整理</button>
+            <button id="nm-dedupe" class="btn btn-sm" title="同じ名前のレイヤーに「 1, 2…」を付けて区別（未選択なら同名レイヤーすべて）">同名に連番</button>
+          </div>
+          <div class="add-row">
+            <input id="nm-new" class="nm-input" type="text" placeholder="スタンプにする単語">
+            <button id="nm-add" class="btn btn-sm">追加</button>
+            <button id="nm-del-mode" class="btn btn-sm">削除</button>
+          </div>
+          <div class="replace-box">
+            <span class="small muted">名前の置換（選択中のレイヤー／フォルダー）</span>
+            <input id="nm-find" class="nm-input" type="text" placeholder="置換前（探す文字）">
+            <input id="nm-rep" class="nm-input" type="text" placeholder="置換後（空欄なら削除）">
+            <label class="check small"><input id="nm-children" type="checkbox"> <span>フォルダーの中身も対象にする</span></label>
+            <button id="nm-replace" class="btn btn-sm">置換する</button>
+          </div>
+          <button id="nm-undo" class="btn btn-sm btn-ghost btn-block" disabled>元に戻す</button>
+        </section>
+
+        <section id="detail" class="card detail">
+          <p class="muted empty-detail">レイヤーをクリックすると詳細を表示します。</p>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <span>ファイルはブラウザ内だけで処理され、外部に送信されません</span>
+    <span>.clip の読み込みは非公式の解析によるものです</span>
+    <a href="THIRD_PARTY_LICENSES.md" target="_blank" rel="noopener">ライセンス</a>
+  </footer>
+
+  <!-- 設定 -->
+  <dialog id="settings-dlg" class="dialog">
+    <form method="dialog">
+      <h3>チェック設定</h3>
+      <label class="field">
+        <span>命名NGワード（カンマ区切り・部分一致）</span>
+        <input id="set-words" type="text">
+        <small>「レイヤー 1」「グループ 2」「〜のコピー」などのデフォルト名は常に検出します。</small>
+      </label>
+      <label class="check">
+        <input id="set-dup-groups" type="checkbox">
+        <span>同名チェックにフォルダも含める</span>
+      </label>
+      <label class="check">
+        <input id="set-dup-hidden" type="checkbox">
+        <span>同名チェックに非表示レイヤーも含める</span>
+      </label>
+      <label class="field">
+        <span>キャンバス外と判定する割合（%）</span>
+        <input id="set-out" type="number" min="1" max="100" step="1">
+      </label>
+      <div class="dlg-actions">
+        <button value="cancel" class="btn">キャンセル</button>
+        <button id="settings-save" value="ok" class="btn btn-primary">保存して再チェック</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 拡大ビューア -->
+  <div id="viewer" class="viewer hidden" role="dialog" aria-modal="true" aria-label="拡大表示">
+    <div class="viewer-bar">
+      <span id="viewer-title" class="viewer-title"></span>
+      <span id="viewer-status" class="viewer-status"></span>
+      <div class="viewer-tools">
+        <button class="icon-btn" data-vz="out" title="縮小（-）" aria-label="縮小">−</button>
+        <span id="viewer-zoom" class="viewer-zoom">100%</span>
+        <button class="icon-btn" data-vz="in" title="拡大（+）" aria-label="拡大">＋</button>
+        <button class="btn btn-sm" data-vz="fit" title="全体表示（0）">全体</button>
+        <button class="btn btn-sm" data-vz="one" title="等倍（1）">等倍</button>
+        <button class="btn btn-sm" data-vz="bg" title="背景を切り替え">背景</button>
+        <button class="icon-btn" data-vz="close" title="閉じる（Esc）" aria-label="閉じる">✕</button>
+      </div>
+    </div>
+    <div id="viewer-stage" class="viewer-stage" data-bg="checker">
+      <div id="viewer-wrap" class="viewer-wrap">
+        <canvas id="viewer-canvas"></canvas>
+        <div id="viewer-sel" class="viewer-sel hidden"></div>
+      </div>
+    </div>
+    <p class="viewer-hint">ホイールで拡大・縮小 ／ ドラッグで移動 ／ ダブルクリックで等倍⇔全体</p>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="lib/ag-psd.js"></script>
+  <script src="lib/fflate.js"></script>
+  <script src="lib/sql-wasm.js"></script>
+  <script src="lib/sql-wasm-binary.js"></script>
+  <script src="clip.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
